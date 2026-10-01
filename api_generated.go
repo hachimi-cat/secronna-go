@@ -18,7 +18,7 @@ type apigenTransport interface {
 	apigenRequest(ctx context.Context, method, path string, query url.Values, body map[string]any) (json.RawMessage, error)
 }
 
-// GeneratedAPI has all 20 feature routes of the Secronna API, one method each
+// GeneratedAPI has all 25 feature routes of the Secronna API, one method each
 // (generated from the API spec). A method takes the path parameters, then an *<Method>Args
 // with the query fields (tagged query) and the JSON body fields (tagged json): required
 // fields are plain values, optional ones pointers, slices or maps that nil leaves out,
@@ -277,6 +277,60 @@ func (a *GeneratedAPI) SecretsReveal(ctx context.Context, secretID string, p *Se
 	return a.c.apigenRequest(ctx, "POST", path, q, nil)
 }
 
+// WebhookDeliveriesGet calls GET /api/v1/webhook-deliveries/{id}: Get a webhook delivery, with every attempt made at it.
+func (a *GeneratedAPI) WebhookDeliveriesGet(ctx context.Context, id string) (json.RawMessage, error) {
+	path := "/api/v1/webhook-deliveries/" + url.PathEscape(id)
+	return a.c.apigenRequest(ctx, "GET", path, nil, nil)
+}
+
+// WebhookDeliveriesListArgs are the inputs of GeneratedAPI.WebhookDeliveriesList.
+type WebhookDeliveriesListArgs struct {
+	// EndpointID is "endpointId" in the query.
+	EndpointID *string `query:"endpointId"`
+
+	// Status is "status" in the query. One of: pending, success, failed.
+	Status *string `query:"status"`
+
+	// EventType is "eventType" in the query.
+	EventType *string `query:"eventType"`
+
+	// Limit is "limit" in the query.
+	Limit *int `query:"limit"`
+
+	// Cursor is "cursor" in the query.
+	Cursor *string `query:"cursor"`
+}
+
+// WebhookDeliveriesList calls GET /api/v1/webhook-deliveries: List webhook deliveries across the workspace's endpoints, newest first, each with every attempt made.
+func (a *GeneratedAPI) WebhookDeliveriesList(ctx context.Context, p *WebhookDeliveriesListArgs) (json.RawMessage, error) {
+	if p == nil {
+		p = &WebhookDeliveriesListArgs{}
+	}
+	q := url.Values{}
+	if p.EndpointID != nil {
+		q.Set("endpointId", apigenQueryValue(*p.EndpointID))
+	}
+	if p.Status != nil {
+		q.Set("status", apigenQueryValue(*p.Status))
+	}
+	if p.EventType != nil {
+		q.Set("eventType", apigenQueryValue(*p.EventType))
+	}
+	if p.Limit != nil {
+		q.Set("limit", apigenQueryValue(*p.Limit))
+	}
+	if p.Cursor != nil {
+		q.Set("cursor", apigenQueryValue(*p.Cursor))
+	}
+	return a.c.apigenRequest(ctx, "GET", "/api/v1/webhook-deliveries", q, nil)
+}
+
+// WebhookDeliveriesRetry calls POST /api/v1/webhook-deliveries/{id}/retry: Retry a webhook delivery: one more attempt now at a failed delivery (or send a successful one again). 202 with the delivery pending; 409 ALREADY_QUEUED when it is pending already, 409 ENDPOINT_DISABLE.
+func (a *GeneratedAPI) WebhookDeliveriesRetry(ctx context.Context, id string) (json.RawMessage, error) {
+	path := "/api/v1/webhook-deliveries/" + url.PathEscape(id) + "/retry"
+	return a.c.apigenRequest(ctx, "POST", path, nil, nil)
+}
+
 // WebhooksCreateArgs are the inputs of GeneratedAPI.WebhooksCreate.
 type WebhooksCreateArgs struct {
 	// URL is "url" in the body, required.
@@ -293,7 +347,7 @@ type WebhooksCreateArgs struct {
 	Body map[string]any `json:"-"`
 }
 
-// WebhooksCreate calls POST /api/v1/webhooks: RequireAuth is attached PER-ROUTE (not r.use) so unmatched paths fall through to the parent 404 handler instead of 401.
+// WebhooksCreate calls POST /api/v1/webhooks: Register a webhook endpoint.
 func (a *GeneratedAPI) WebhooksCreate(ctx context.Context, p *WebhooksCreateArgs) (json.RawMessage, error) {
 	if p == nil {
 		p = &WebhooksCreateArgs{}
@@ -317,7 +371,7 @@ func (a *GeneratedAPI) WebhooksCreate(ctx context.Context, p *WebhooksCreateArgs
 	return a.c.apigenRequest(ctx, "POST", "/api/v1/webhooks", nil, payload)
 }
 
-// WebhooksDelete calls DELETE /api/v1/webhooks/{id}: Delete a webhook.
+// WebhooksDelete calls DELETE /api/v1/webhooks/{id}: Delete a webhook endpoint and its delivery log.
 func (a *GeneratedAPI) WebhooksDelete(ctx context.Context, id string) (json.RawMessage, error) {
 	path := "/api/v1/webhooks/" + url.PathEscape(id)
 	return a.c.apigenRequest(ctx, "DELETE", path, nil, nil)
@@ -329,7 +383,7 @@ type WebhooksDeliveriesArgs struct {
 	Limit any `query:"limit"`
 }
 
-// WebhooksDeliveries calls GET /api/v1/webhooks/{id}/deliveries: List deliveries.
+// WebhooksDeliveries calls GET /api/v1/webhooks/{id}/deliveries: One endpoint's recent deliveries (newest first), each with its attempts.
 func (a *GeneratedAPI) WebhooksDeliveries(ctx context.Context, id string, p *WebhooksDeliveriesArgs) (json.RawMessage, error) {
 	if p == nil {
 		p = &WebhooksDeliveriesArgs{}
@@ -342,9 +396,55 @@ func (a *GeneratedAPI) WebhooksDeliveries(ctx context.Context, id string, p *Web
 	return a.c.apigenRequest(ctx, "GET", path, q, nil)
 }
 
-// WebhooksList calls GET /api/v1/webhooks: List webhooks.
+// WebhooksEventTypes calls GET /api/v1/webhooks/event-types: The event types an endpoint can subscribe to.
+func (a *GeneratedAPI) WebhooksEventTypes(ctx context.Context) (json.RawMessage, error) {
+	return a.c.apigenRequest(ctx, "GET", "/api/v1/webhooks/event-types", nil, nil)
+}
+
+// WebhooksList calls GET /api/v1/webhooks: List the workspace's webhook endpoints.
 func (a *GeneratedAPI) WebhooksList(ctx context.Context) (json.RawMessage, error) {
 	return a.c.apigenRequest(ctx, "GET", "/api/v1/webhooks", nil, nil)
+}
+
+// WebhooksUpdateArgs are the inputs of GeneratedAPI.WebhooksUpdate.
+type WebhooksUpdateArgs struct {
+	// URL is "url" in the body.
+	URL *string `json:"url,omitempty"`
+
+	// Events is "events" in the body.
+	Events []string `json:"events,omitempty"`
+
+	// Description is "description" in the body.
+	Description *string `json:"description,omitempty"`
+
+	// Enabled is "enabled" in the body.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Body is the whole JSON body, for what the fields above do not cover; the fields
+	// that are set replace its keys.
+	Body map[string]any `json:"-"`
+}
+
+// WebhooksUpdate calls PATCH /api/v1/webhooks/{id}: Change a webhook endpoint: url, events, description, or enabled. enabled: false pauses it (its queued deliveries fail); enabled: true re-enables it, also after Secronna switched it off for failing, an.
+func (a *GeneratedAPI) WebhooksUpdate(ctx context.Context, id string, p *WebhooksUpdateArgs) (json.RawMessage, error) {
+	if p == nil {
+		p = &WebhooksUpdateArgs{}
+	}
+	payload := apigenBody(p.Body)
+	if p.URL != nil {
+		payload["url"] = *p.URL
+	}
+	if p.Events != nil {
+		payload["events"] = p.Events
+	}
+	if p.Description != nil {
+		payload["description"] = *p.Description
+	}
+	if p.Enabled != nil {
+		payload["enabled"] = *p.Enabled
+	}
+	path := "/api/v1/webhooks/" + url.PathEscape(id)
+	return a.c.apigenRequest(ctx, "PATCH", path, nil, payload)
 }
 
 // apigenBody copies Body, so the fields set over it never change the caller's map.
